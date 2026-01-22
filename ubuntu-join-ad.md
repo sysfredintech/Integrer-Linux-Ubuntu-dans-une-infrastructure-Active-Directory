@@ -97,27 +97,27 @@ Par mesure de simplicité, l'OU dédiée aux postes et utilisateurs Linux est pl
 Dans le gestionnaire de l'Active Directory
 - Créer la nouvelle OU
 
-![Config AD](./conf-ad1.png)
-![Config AD](./conf-ad2.png)
+![Config AD](./images/conf-ad1.png)
+![Config AD](./images/conf-ad2.png)
 - Créer le groupe pour les ordinateurs
 
-![Config AD](./conf-ad3.png)
-![Config AD](./conf-ad4.png)
+![Config AD](./images/conf-ad3.png)
+![Config AD](./images/conf-ad4.png)
 - Créer le groupe pour les utilisateurs
 
-![Config AD](./conf-ad5.png)
+![Config AD](./images/conf-ad5.png)
 - Créer l'utilisateur
 
-![Config AD](./conf-ad6.png)
-![Config AD](./conf-ad7.png)
-![Config AD](./conf-ad8.png)
+![Config AD](./images/conf-ad6.png)
+![Config AD](./images/conf-ad7.png)
+![Config AD](./images/conf-ad8.png)
 - L'ajouter au groupe
 
-![Config AD](./conf-ad9.png)
-![Config AD](./conf-ad10.png)
+![Config AD](./images/conf-ad9.png)
+![Config AD](./images/conf-ad10.png)
 - Définir sont dossier _home_
 
-![Config AD](./conf-ad11.png)
+![Config AD](./images/conf-ad11.png)
 
 Le dossier de l'utilisateur sera créé automatiquement par Windows avec les bonnes permissions grâce à l'ajout du paramètre _Home folder_
 
@@ -130,24 +130,24 @@ Dans le gestionnaire d'ordinateurs (compmgmt.msc)
 
 - Se connecter au serveur Samba
 
-![Connexion au serveur Samba](./conf-pc1.png)
-![Connexion au serveur Samba](./conf-pc2.png)
+![Connexion au serveur Samba](./images/conf-pc1.png)
+![Connexion au serveur Samba](./images/conf-pc2.png)
 
 - Sélectionner le partage concerné
 
-![Selection du partage Linux-Profiles](./conf-pc3.png)
+![Selection du partage Linux-Profiles](./images/conf-pc3.png)
 - Changer les permissions à _Modify_ pour le groupe d'ordinateurs
 
-![Security Advanced](./conf-pc4.png)
-![Definition des permissions](./conf-pc5.png)
-![Definition des permissions](./conf-pc6.png)
+![Security Advanced](./images/conf-pc4.png)
+![Definition des permissions](./images/conf-pc5.png)
+![Definition des permissions](./images/conf-pc6.png)
 - Définir les permissions à Travers / List / Create folders pour le groupe utilisateurs
 
-![Definition des permissions](./conf-pc7.png)
-![Definition des permissions](./conf-pc8.png)
+![Definition des permissions](./images/conf-pc7.png)
+![Definition des permissions](./images/conf-pc8.png)
 - Ne pas oublier de sélectionner _This folder only_
 
-![Definition des permissions](./conf-pc9.png)
+![Definition des permissions](./images/conf-pc9.png)
 
 
 ## Sur le poste Linux
@@ -270,7 +270,7 @@ Doit afficher notre ou nos serveurs AD
 ```bash
 apt install -y realmd sssd sssd-tools libnss-sss libpam-sss adcli samba-common-bin krb5-user krb5-config autofs cifs-utils keyutils
 ```
-![Realm kerberos](./conf-ubuntu1.png)
+![Realm kerberos](./images/conf-ubuntu1.png)
 
 6. **Jointure de la machine au domaine**
 
@@ -310,9 +310,9 @@ home.lab
 
 - Ajouter le PC Ubuntu au groupe "pc_linux"
 
-![Group 1](./conf-ad-grp1.png)
-![Group 2](./conf-ad-grp2.png)
-![Group 3](./conf-ad-grp3.png)
+![Group 1](./images/conf-ad-grp1.png)
+![Group 2](./images/conf-ad-grp2.png)
+![Group 3](./images/conf-ad-grp3.png)
 
 
 ## Sur le poste Linux
@@ -542,7 +542,7 @@ tail -f /var/log/pam-script.log
 
 Cliquez sur "absent de la liste" pour entrer manuellement le login et le mot de passe, nous avons configuré sssd pour utiliser les noms courts donc on ne saisit que le nom de l'utilisateur sans le @home.lab
 
-![open session](./open-session-1.png)
+![open session](./images/open-session-1.png)
 
 Depuis la connexion ssh, vérifier le montage du dossier utilisateur
 ```bash
@@ -555,7 +555,7 @@ Doit renvoyer
 
 Lancer le gestionnaire de fichier pour constater la création des éléments pour l'utilisateur
 
-![home dir](./home-dir1.png)
+![home dir](./images/home-dir1.png)
 
 Ouvrir un terminal pour vérifier la disposition du clavier et vérifier les permissions
 ```bash
@@ -584,7 +584,7 @@ drwx------  2 tux  1031601244    0 janv. 21 17:38 Vidéos
 
 Créer un fichier test dans le /home
 
-![test file](./test-file.png)
+![test file](./images/test-file.png)
 
 ## Sur le serveur Samba
 
@@ -691,12 +691,12 @@ Ne doit rien renvoyer
 
 3. **Créer un utilisateur supplémentaire dans l'AD de la même façon que le premier et se connecter sur le poste Linux**
 
-![new user ad](./new-ad-user.png)
-![new user ad](./new-ad-user2.png)
+![new user ad](./images/new-ad-user.png)
+![new user ad](./images/new-ad-user2.png)
 
 Vérifier le montage du _home_, son contenu et les permissions
 
-![new user ad](./new-ad-user3.png)
+![new user ad](./images/new-ad-user3.png)
 
 Refaire les étapes de vérifications vues précédemment sur le poste Linux concernant le démontage du _home_ et sur le serveur Samba concernant les permissions ainsi que l'application du script de gestion des quotas
 
