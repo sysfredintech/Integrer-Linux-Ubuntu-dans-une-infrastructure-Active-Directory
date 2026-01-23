@@ -526,7 +526,8 @@ Modifier la configuration PAM pour l'ensemble des modes de connexions
 vim /etc/pam.d/common-session
 ```
 Configurer le bloque additionnel comme suit et adapter les valeurs de quotas hard et soft en fonction des besoins (valeur en Ko)
-Ces valeurs devront être reportées dans le script du définition des quotas pour les utilisateurs du groupe AD sur le serveur Samba que nous feront par la suite
+
+Ces valeurs devront être reportées dans le script de définition des quotas pour les utilisateurs du groupe AD sur le serveur Samba que nous feront par la suite
 ```
 # and here are more per-package modules (the "Additional" block)
 session required        pam_unix.so
