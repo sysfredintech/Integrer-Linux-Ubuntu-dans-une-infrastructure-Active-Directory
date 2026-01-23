@@ -591,13 +591,18 @@ apt install nemo* -y
 apt autoremove -y
 ```
 
-Création d'un lanceur épinglé dans la barre d'application pour tous les utilisateurs
+Création des lanceurs épinglés dans la barre d'applications pour tous les utilisateurs, à adapter en fonctions des logiciels disponibles et des besoins
 ```bash
 vim /etc/dconf/db/local.d/20-nemo-fav
 ```
 ```
 [org/gnome/shell]
 favorite-apps=['firefox.desktop', 'nemo.desktop', 'org.gnome.Calculator.desktop']
+```
+Pour les applications installées avec snap, comme Firefox, il faudra copier les fichiers .desktop correspondants dans _/usr/share/applications/_ et modifier le lanceur pour afficher l'icône
+```bash
+cp /snap/firefox/6565/firefox.desktop /usr/share/applications/
+sed -i 's/Icon=\/default256.png/Icon=\/snap\/firefox\/6565\/default256.png/g' /usr/share/applications/firefox.desktop
 ```
 ```bash
 dconf update
