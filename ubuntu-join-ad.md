@@ -2,6 +2,14 @@
 
 **Dans ce lab, on utilisera un poste client Ubuntu 24.04 utilisant l'environnement de bureau Gnome avec Wayland, il est possible d'adapter cette procédure pour des distributions ou environnement de bureau différents**
 
+## Objectifs
+
+Intégrer des postes Linux dans un environnement Active Directory afin qu'un groupe d'utilisateurs défini puissent s'y connecter avec leur compte AD. Ces utilisateurs doivent retrouver leur profil d'un poste Linux à l'autre et également continuer à travailler si les serveurs AD ne sont pas disponibles (poste hors-ligne par exemple)
+
+Les permissions d'accès aux dossiers et fichiers de ces utilisateurs doivent être sécurisés, donc visibles et modifiables que par eux-mêmes. (Et éventuellement les administrateurs)
+
+La gestion de l'espace occupé par ces utilisateurs sur le serveur de fichiers doit être maîtrisé à travers l'utilisation de quotas d'espace disque.
+
 ## Contexte du lab
 
 - 2 serveurs AD DC : WIN-KO477AGSO9G (192.168.10.28) et SRV-WIN22 (192.168.10.29)
@@ -154,6 +162,17 @@ Dans le gestionnaire d'ordinateurs (compmgmt.msc)
 
 **Sur une installation vierge d'Ubuntu 24.04 avec un utilisateur local (groupe sudo) que nous utiliserons pour la connexion ssh**
 
+**L'installation doit être réalisée avec une partition séparée pour le montage de _/home_ afin de pouvoir gérer les quotas utilisateurs localement**
+
+Exemple de partitionnement du disque pendant l'installation
+
+![Install Ubuntu](./images/install-ubuntu-1.png)
+![Install Ubuntu](./images/install-ubuntu-2.png)
+![Install Ubuntu](./images/install-ubuntu-3.png)
+![Install Ubuntu](./images/install-ubuntu-4.png)
+![Install Ubuntu](./images/install-ubuntu-5.png)
+![Install Ubuntu](./images/install-ubuntu-6.png)
+
 1. **Préparation de l'environnement**
 
 ```bash
@@ -232,9 +251,10 @@ nslookup home.lab
 ```
 Doit renvoyer
 ```
-Server:		192.168.10.28
-Address:	192.168.10.28#53
+Server:		127.0.0.53
+Address:	127.0.0.53#53
 
+Non-authoritative answer:
 Name:	home.lab
 Address: 192.168.10.28
 Name:	home.lab
@@ -394,7 +414,40 @@ Désactiver les sockets SSSD suivantes pour éviter les conflits
 systemctl disable --now sssd-nss.socket sssd-pam-priv.socket sssd-pam.socket
 ```
 
-3. **Configuration du module PAM pour l'authentification**
+3. **Mise en place des quotas sur la partition _/home_ afin de prévenir les erreurs de synchronisation ultérieures avec le dossier distant**
+
+Création d'un utilisateur temporaire
+```bash
+useradd -M tempo -s /bin/bash -G sudo
+passwd tempo
+```
+Se déconnecter puis se reconnecter avec l'utilisateur temporaire
+```
+sudo -i
+fuser -km /home/fred # A adapter
+apt install quota -y
+umount /home
+tune2fs -O quota /dev/sda4 # sda4 est la partition du /home ici
+tune2fs -Q usrquota,grpquota /dev/sda4
+vim /etc/fstab
+```
+Modifier la ligne correspondante au montage de /home pour y ajouter les options usrquota et grpquota
+```
+/dev/disk/by-uuid/534d04fd-2d43-4549-a8f7-3ee5ebb97891 /boot ext4 defaults,usrquota,grpquota 0 1
+```
+```bash
+systemctl daemon-reload
+mount -av
+```
+Vérifier que la commande _mount_ ne renvoi pas d'erreur
+
+Se déconnecter puis se reconnecter avec l'utilisateur initial
+```bash
+sudo -i
+userdel tempo
+```
+
+4. **Configuration du module PAM pour l'authentification**
 
 Créer un script PAM pour le montage à la connexion et le démontage à la déconnexion du _/home_ des utilisateurs avec une synchronisation des données pour les connexions hors ligne.
 
@@ -472,19 +525,21 @@ Modifier la configuration PAM pour l'ensemble des modes de connexions
 ```bash
 vim /etc/pam.d/common-session
 ```
-Configurer le bloque additionnel comme suit:
+Configurer le bloque additionnel comme suit et adapter les valeurs de quotas hard et soft en fonction des besoins (valeur en Ko)
+Ces valeurs devront être reportées dans le script du définition des quotas pour les utilisateurs du groupe AD sur le serveur Samba que nous feront par la suite
 ```
 # and here are more per-package modules (the "Additional" block)
 session required        pam_unix.so
 session optional        pam_sss.so
 session optional        pam_mkhomedir.so
 session optional        pam_exec.so     /usr/local/bin/setup_home.sh
+session optional        pam_setquota.so bsoftlimit=10485760 bhardlimit=11534336 startuid=10000 enduid=9999999999 overwrite=1
 session optional        pam_systemd.so
 # end of pam-auth-update config
 ```
 
 
-4. **Mise en place de la configuration de Wayland via dconf pour le mappage du clavier pour tous les utilisateurs (AD inclus)**
+5. **Mise en place de la configuration de Wayland via dconf pour le mappage du clavier pour tous les utilisateurs (AD inclus)**
 
 ```bash
 vim /etc/dconf/profile/user
@@ -521,19 +576,19 @@ sources=[('xkb', 'fr+latin9')]
 xkb-options=@as []
 ```
 
-Désactiver le démon ibus qui génère un crash à l'ouverture session et qui ne sera d'aucune utilité dans une utilisation standard du poste
+Le démon ibus peut générer un crash à l'ouverture de la première session et il ne sera d'aucune utilité dans une utilisation standard du poste, il est possible de le désactiver
 ```bash
 systemctl --global mask ibus.service
 systemctl --global mask ibus-x11.service
 ```
 
-5. **Remplacer l'explorateur de fichiers natif de Gnome qui pose des problèmes de gestion de base de données lors du passage d'un poste Linux à l'autre par l'explorateur de fichiers Nemo qui s'intègre très bien dans l'environnement Gnome**
+6. **Remplacer l'explorateur de fichiers natif de Gnome qui pose des problèmes de gestion de base de données lors du passage d'un poste Linux à l'autre par l'explorateur de fichiers Nemo qui s'intègre très bien dans l'environnement Gnome**
 
 Désinstallation complète de Nautilus et installation de Nemo avec l'intégralité des plugins
 ```bash
-apt remove --purge nautilus*
-apt install nemo*
-apt autoremove
+apt remove --purge nautilus* -y
+apt install nemo* -y
+apt autoremove -y
 ```
 
 Création d'un lanceur épinglé dans la barre d'application pour tous les utilisateurs
@@ -553,13 +608,19 @@ dconf update
 1. **Redémarrer la machine et s'assurer qu'on a pas d'erreur au boot**
 
 ```bash
+sudo -i
 journalctl -b
+```
+S'assurer que les quotas activés
+```
+quotaon /home
 ```
 
 2. **Ouvrir une session avec l'utilisateur de l'AD**
 
-Pour surveiller le bon déroulement de l'ouverture de session et de l'exécution du script PAM, il est possible de lancer les commandes suivante en root dans un terminal
+Pour surveiller le bon déroulement de l'ouverture de session et de l'exécution du script PAM, il est possible de lancer les commandes suivante avec le compte utilisateur local en ssh
 ```bash
+sudo -i
 tail -f /var/log/auth.log
 tail -f /var/log/pam-script.log
 ```
@@ -609,6 +670,23 @@ drwx------  2 tux  1031601244    0 janv. 21 17:38 Vidéos
 Créer un fichier test dans le /home
 
 ![test file](./images/test-file.png)
+
+Depuis la connexion ssh avec le compte local, vérifier la bonne application des quotas pour l'utilisateur AD sur la partition _/home_
+```bash
+repquota -s /home
+```
+Doit renvoyer
+```
+*** Rapport pour les quotas user sur le périphérique /dev/sda4
+Période de sursis bloc : 7days ; période de sursis inode : 7days
+                        Space limits                File limits
+Utilisateur     utilisé souple stricte sursis utilisé souple stricte sursis
+----------------------------------------------------------------------
+root      --     20K      0K      0K              2     0     0       
+fred      --  14728K      0K      0K            356     0     0       
+#1031601244 --   5932K  10240M  11264M            449     0     0
+```
+
 
 ## Sur le serveur Samba
 
@@ -666,6 +744,7 @@ drwxrws---+ 14 root domain_admins 4096 Jan 21 19:07 ../
 
 2. **Créer un script pour la gestion des quotas pour les utilisateurs du groupe users_linux**
 
+Reporter les valeurs définis sur le dossier _/home_ du poste Linux afin d'éviter des erreurs de synchronisation des données
 ```bash
 vim /usr/local/bin/linux-profiles-quotas.sh
 ```
