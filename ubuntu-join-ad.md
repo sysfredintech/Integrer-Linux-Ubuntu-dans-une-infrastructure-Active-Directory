@@ -10,7 +10,7 @@ Les permissions d'accès aux dossiers et fichiers de ces utilisateurs doivent ê
 
 La gestion de l'espace occupé par ces utilisateurs sur le serveur de fichiers doit être maîtrisé à travers l'utilisation de quotas d'espace disque.
 
-## Contexte du lab
+## Contexte du lab
 
 - 2 serveurs AD DC : WIN-KO477AGSO9G (192.168.10.28) et SRV-WIN22 (192.168.10.29)
 - Nom du domaine : home.lab
@@ -335,7 +335,7 @@ home.lab
 ![Group 3](./images/conf-ad-grp3.png)
 
 
-## Sur le poste Linux
+## Sur le poste Linux
 
 1. **Configuration de Kerberos**
 
