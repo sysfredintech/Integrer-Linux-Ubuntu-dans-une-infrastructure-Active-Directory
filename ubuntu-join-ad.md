@@ -336,6 +336,7 @@ udp_preference_limit = 0
 [realms]
     HOME.LAB = {
         kdc = WIN-KO477AGSO9G.home.lab
+        kdc = SRV-WIN22.home.lab
         admin_server = WIN-KO477AGSO9G.home.lab
         default_domain = home.lab
     }
@@ -361,7 +362,7 @@ default_shell = /bin/bash
 krb5_store_password_if_offline = True
 cache_credentials = True
 krb5_realm = HOME.LAB
-realmd_tags = manages-system joined-with-adcli
+realmd_tags = manages-system joined-with-realmd
 id_provider = ad
 fallback_homedir = /home/%u
 override_homedir = /home/%u
@@ -380,7 +381,6 @@ ad_gpo_ignore_unreadable = true
 
 krb5_canonicalize = false
 krb5_use_enterprise_principal = false
-krb5_realm = HOME.LAB
 ```
 ```bash
 systemctl restart sssd
