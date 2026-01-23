@@ -484,11 +484,11 @@ LOCAL_PROFILE="/home/$PAM_USER"
     if [ -d "$LOCAL_PROFILE" ]; then
     TMP_DIR="/tmp/$PAM_USER"
     mkdir -p "$TMP_DIR"
-    rsync -ar "$LOCAL_PROFILE/" "$TMP_DIR/"
+    rsync -ar --copy-links --exclude='.cache' "$LOCAL_PROFILE/" "$TMP_DIR/"
     fi
-mount -v -t cifs "$SAMBA_PROFILE" "$LOCAL_PROFILE" -o sec=krb5,vers=3.0,uid=$USER_UID,gid=$USER_UID,file_mode=0600,dir_mode=0700,cruid=$USER_UID,dynperm
+mount -v -t cifs "$SAMBA_PROFILE" "$LOCAL_PROFILE" -o sec=krb5,vers=3.0,uid=$USER_UID,gid=$USER_UID,file_mode=0600,dir_mode=0700,cruid=$USER_UID,dynperm,nobrl,mfsymlinks
 if [ -d "$TMP_DIR" ]; then
-rsync -aru "$TMP_DIR/" "$LOCAL_PROFILE/"
+rsync -aru --copy-links "$TMP_DIR/" "$LOCAL_PROFILE/"
 rm -rf $TMP_DIR
 fi
 exit 0
@@ -499,14 +499,14 @@ LOCAL_PROFILE="/home/$PAM_USER"
 # Synchronisation des données depuis le dossier distant vers le /home local via /tmp
 TMP_DIR="/tmp/$PAM_USER"
 mkdir -p "$TMP_DIR"
-rsync -ar "$LOCAL_PROFILE/" "$TMP_DIR/"
+rsync -ar --copy-links --exclude='.cache' "$LOCAL_PROFILE/" "$TMP_DIR/"
 USE_MOUNT=$(fuser -m "$LOCAL_PROFILE")
     while [ -n "$USE_MOUNT" ]; do
             fuser -km "$LOCAL_PROFILE"
             USE_MOUNT=$(fuser -m "$LOCAL_PROFILE")
     done
 umount -f -l "$LOCAL_PROFILE"
-rsync -aru "$TMP_DIR/" "$LOCAL_PROFILE/"
+rsync -aru --copy-links "$TMP_DIR/" "$LOCAL_PROFILE/"
 rm -rf $TMP_DIR
 exit 0
 fi
