@@ -381,7 +381,11 @@ ad_gpo_ignore_unreadable = true
 
 krb5_canonicalize = false
 krb5_use_enterprise_principal = false
+
+[pam]
+offline_credentials_expiration = 3
 ```
+Cette configuration permettra aux utilisateurs de se connecter avec leurs identifiants AD même si le poste est hors ligne pendant une durée de trois jours.
 ```bash
 systemctl restart sssd
 ```
@@ -392,7 +396,11 @@ systemctl disable --now sssd-nss.socket sssd-pam-priv.socket sssd-pam.socket
 
 3. **Configuration du module PAM pour l'authentification**
 
-Créer un script PAM pour le montage à la connexion et le démontage à la déconnexion du _/home_ des utilisateurs
+Créer un script PAM pour le montage à la connexion et le démontage à la déconnexion du _/home_ des utilisateurs avec une synchronisation des données pour les connexions hors ligne.
+
+Si l'utilisateur se connecte sur le poste alors que les serveurs AD sont indisponibles, il retrouvera le contenu de son _/home_ tel qu'il était à la dernière déconnexion.
+
+De même, si l'utilisateur travail hors ligne, lors de la reconnexion sur le domaine, ses données seront synchronisées avec le serveur distant.
 
 _Il faut adapter la valeur de la variable SAMBA_PROFILE selon le chemin vers le partage_
 ```bash
@@ -419,18 +427,34 @@ fi
 if [ "$PAM_TYPE" == "open_session" ]; then
 SAMBA_PROFILE="//sambasrv/linux-profiles/$PAM_USER"
 LOCAL_PROFILE="/home/$PAM_USER"
+# Synchronisation des données depuis le /home local vers le dossier distant via /tmp
+    if [ -d "$LOCAL_PROFILE" ]; then
+    TMP_DIR="/tmp/$PAM_USER"
+    mkdir -p "$TMP_DIR"
+    rsync -ar "$LOCAL_PROFILE/" "$TMP_DIR/"
+    fi
 mount -v -t cifs "$SAMBA_PROFILE" "$LOCAL_PROFILE" -o sec=krb5,vers=3.0,uid=$USER_UID,gid=$USER_UID,file_mode=0600,dir_mode=0700,cruid=$USER_UID,dynperm
+if [ -d "$TMP_DIR" ]; then
+rsync -aru "$TMP_DIR/" "$LOCAL_PROFILE/"
+rm -rf $TMP_DIR
+fi
 exit 0
 
 # Démontage du dossier /home à la déconnexion
 elif [ "$PAM_TYPE" == "close_session" ]; then
 LOCAL_PROFILE="/home/$PAM_USER"
+# Synchronisation des données depuis le dossier distant vers le /home local via /tmp
+TMP_DIR="/tmp/$PAM_USER"
+mkdir -p "$TMP_DIR"
+rsync -ar "$LOCAL_PROFILE/" "$TMP_DIR/"
 USE_MOUNT=$(fuser -m "$LOCAL_PROFILE")
-while [ -n "$USE_MOUNT" ]; do
-        fuser -km "$LOCAL_PROFILE"
-        USE_MOUNT=$(fuser -m "$LOCAL_PROFILE")
-done
+    while [ -n "$USE_MOUNT" ]; do
+            fuser -km "$LOCAL_PROFILE"
+            USE_MOUNT=$(fuser -m "$LOCAL_PROFILE")
+    done
 umount -f -l "$LOCAL_PROFILE"
+rsync -aru "$TMP_DIR/" "$LOCAL_PROFILE/"
+rm -rf $TMP_DIR
 exit 0
 fi
 ```
