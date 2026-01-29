@@ -362,8 +362,8 @@ udp_preference_limit = 0
     }
 
 [domain_realm]
-    .home.lan = HOME.LAB
-    home.lan = HOME.LAB
+    .home.lab = HOME.LAB
+    home.lab = HOME.LAB
 ```
 
 2. **Configuration de SSSD**
